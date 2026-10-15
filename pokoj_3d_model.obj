@@ -1,0 +1,54 @@
+# 3D Model podkrovniho pokoje (jednotky: cm)
+# Rozmery pudorysu: 760.9 cm (sirka X) x 427.0 cm (delka Z)
+# Vyska nadezdivky: 100.0 cm, Vyska rovneho stropu: 235.0 cm
+# Sikmina: delka 245.0 cm, vodorovny prumet 204.45 cm, uhel sklonu 33.44 st. (vnitrni uhel 146.56 st.)
+
+o Podkrovni_Pokoj
+
+# Vrcholy predni steny (Z = 0)
+v 0.00 0.00 0.00
+v 760.90 0.00 0.00
+v 760.90 100.00 0.00
+v 556.45 235.00 0.00
+v 204.45 235.00 0.00
+v 0.00 100.00 0.00
+
+# Vrcholy zadni steny (Z = 427.0)
+v 0.00 0.00 427.00
+v 760.90 0.00 427.00
+v 760.90 100.00 427.00
+v 556.45 235.00 427.00
+v 204.45 235.00 427.00
+v 0.00 100.00 427.00
+
+# Podlaha (760.9 x 427 cm)
+g Podlaha
+f 1 2 8 7
+
+# Leva nadezdivka (vyska 100 cm, delka 427 cm)
+g Nadezdivka_Leva
+f 1 7 12 6
+
+# Prava nadezdivka (vyska 100 cm, delka 427 cm)
+g Nadezdivka_Prava
+f 2 3 9 8
+
+# Leva sikmina (delka 245 cm, prumet 204.45 cm)
+g Sikmina_Leva
+f 6 12 11 5
+
+# Prava sikmina (delka 245 cm, prumet 204.45 cm)
+g Sikmina_Prava
+f 4 10 9 3
+
+# Rovny strop uprostred (352 x 427 cm, vyska 235 cm)
+g Strop_Rovny
+f 5 11 10 4
+
+# Predni stitova stena (Z = 0)
+g Stitova_Stena_Predni
+f 1 6 5 4 3 2
+
+# Zadni stitova stena (Z = 427 cm)
+g Stitova_Stena_Zadni
+f 7 8 9 10 11 12
