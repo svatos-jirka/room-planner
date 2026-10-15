@@ -797,13 +797,19 @@ function fmtCm(val, digits = 1) {
 }
 
 function recalcRoomDerived() {
-  room.kneeL = Math.max(0, Math.min(500, Number(room.kneeL) || 0));
-  room.kneeR = Math.max(0, Math.min(500, Number(room.kneeR) || 0));
-  room.ceilH = Math.max(Math.max(room.kneeL, room.kneeR) + 5, Math.min(600, Number(room.ceilH) || 235));
-  room.slopeWL = Math.max(0, Math.min(800, Number(room.slopeWL) || 0));
-  room.slopeWR = Math.max(0, Math.min(800, Number(room.slopeWR) || 0));
-  room.flatW = Math.max(0, Math.min(1500, Number(room.flatW) || 0));
-  room.roomL = Math.max(50, Math.min(2000, Number(room.roomL) || 427));
+  const d = getDefaultRoom();
+  const num = (v, fallback) => {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : fallback;
+  };
+
+  room.kneeL = Math.max(0, Math.min(500, num(room.kneeL, d.kneeL)));
+  room.kneeR = Math.max(0, Math.min(500, num(room.kneeR, d.kneeR)));
+  room.ceilH = Math.max(Math.max(room.kneeL, room.kneeR) + 5, Math.min(600, num(room.ceilH, d.ceilH)));
+  room.slopeWL = Math.max(0, Math.min(800, num(room.slopeWL, d.slopeWL)));
+  room.slopeWR = Math.max(0, Math.min(800, num(room.slopeWR, d.slopeWR)));
+  room.flatW = Math.max(0, Math.min(1500, num(room.flatW, d.flatW)));
+  room.roomL = Math.max(50, Math.min(2000, num(room.roomL, d.roomL)));
 
   if (room.symmetric) {
     room.kneeR = room.kneeL;
@@ -2127,27 +2133,32 @@ window.addEventListener('mousemove', e => {
     } else if (secDrag.handleId === 'ptKneeR') {
       applyRoomDimensionChange('kneeR', Math.max(0, Math.min(CEIL_H - 10, hVal)));
     } else if (secDrag.handleId === 'ptCeilL') {
-      const newSlopeWL = Math.max(0, Math.min(ROOM_W - SLOPE_W_R - 20, xVal));
+      // MIN_SEG chrani pred "schlopenim" sikminy/stropu na 0 cm (ztrata definice podkrovi)
+      const MIN_SEG = 20;
       const oldTotalW = ROOM_W;
+      const maxAllowedSlopeWL = Math.max(MIN_SEG, oldTotalW - room.slopeWR - MIN_SEG);
+      const newSlopeWL = Math.max(MIN_SEG, Math.min(maxAllowedSlopeWL, xVal));
       room.slopeWL = newSlopeWL;
       if (room.symmetric) {
         room.slopeWR = newSlopeWL;
-        room.flatW = Math.max(20, Math.round((oldTotalW - 2 * newSlopeWL) * 10) / 10);
+        room.flatW = Math.max(MIN_SEG, Math.round((oldTotalW - 2 * newSlopeWL) * 10) / 10);
       } else {
-        room.flatW = Math.max(20, Math.round((oldTotalW - newSlopeWL - room.slopeWR) * 10) / 10);
+        room.flatW = Math.max(MIN_SEG, Math.round((oldTotalW - newSlopeWL - room.slopeWR) * 10) / 10);
       }
       room.ceilH = Math.max(Math.max(room.kneeL, room.kneeR) + 10, hVal);
       recalcRoomDerived();
     } else if (secDrag.handleId === 'ptCeilR') {
-      const newRightDiv = Math.max(SLOPE_W_L + 20, Math.min(ROOM_W, xVal));
-      const newSlopeWR = Math.max(0, Math.round((ROOM_W - newRightDiv) * 10) / 10);
+      const MIN_SEG = 20;
       const oldTotalW = ROOM_W;
+      const maxRightDiv = Math.max(SLOPE_W_L + MIN_SEG, oldTotalW - MIN_SEG);
+      const newRightDiv = Math.max(SLOPE_W_L + MIN_SEG, Math.min(maxRightDiv, xVal));
+      const newSlopeWR = Math.max(MIN_SEG, Math.round((oldTotalW - newRightDiv) * 10) / 10);
       room.slopeWR = newSlopeWR;
       if (room.symmetric) {
         room.slopeWL = newSlopeWR;
-        room.flatW = Math.max(20, Math.round((oldTotalW - 2 * newSlopeWR) * 10) / 10);
+        room.flatW = Math.max(MIN_SEG, Math.round((oldTotalW - 2 * newSlopeWR) * 10) / 10);
       } else {
-        room.flatW = Math.max(20, Math.round((oldTotalW - room.slopeWL - newSlopeWR) * 10) / 10);
+        room.flatW = Math.max(MIN_SEG, Math.round((oldTotalW - room.slopeWL - newSlopeWR) * 10) / 10);
       }
       room.ceilH = Math.max(Math.max(room.kneeL, room.kneeR) + 10, hVal);
       recalcRoomDerived();
