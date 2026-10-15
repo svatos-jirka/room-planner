@@ -988,6 +988,24 @@ const PROJECT_DATA_PREFIX = 'pokoj_roomsketcher_project_data_v1_';
 const LEGACY_ROOM_KEY = 'pokoj_roomsketcher_room_v2';
 const LEGACY_ITEMS_KEY = 'pokoj_roomsketcher_items_v2';
 
+// ============================================================================
+// STAV APLIKACE (SEZNAM PRVKU) - vychozi nabytek/dvere/okna pro novy projekt
+// ============================================================================
+let items = [];
+let selectedId = null;
+let nextId = 1;
+
+function getDefaultItems() {
+  return [
+    { id: 1, name: 'Okno 100×100', type: 'window', x: 230.5, z: 0, w: 100, l: 14, h: 100, y: 100, color: '#38bdf8' },
+    { id: 2, name: 'Balkonové dveře 100×200', type: 'balcony', x: 430.5, z: 0, w: 100, l: 14, h: 200, y: 0, color: '#0284c7' },
+    { id: 3, name: 'Vstupní dveře 80×200', type: 'door', x: 340.5, z: 413, w: 80, l: 14, h: 200, y: 0, color: '#b45309' },
+    { id: 4, name: 'Manželská postel', type: 'box', x: 205, z: 120, w: 180, l: 200, h: 55, y: 0, color: '#6366f1' },
+    { id: 5, name: 'Komoda pod šikminu', type: 'box', x: 10, z: 140, w: 50, l: 140, h: 95, y: 0, color: '#0891b2' },
+    { id: 6, name: 'Psací stůl', type: 'box', x: 490, z: 170, w: 140, l: 70, h: 75, y: 0, color: '#d97706' }
+  ];
+}
+
 let currentProjectId = null;
 let currentProjectName = 'Můj pokoj';
 
