@@ -169,6 +169,15 @@
       font-size: 13px;
       font-family: inherit;
     }
+    .form-group textarea {
+      padding: 6px 8px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 12.5px;
+      font-family: inherit;
+      resize: vertical;
+      min-height: 46px;
+    }
     .status-box {
       padding: 8px 10px;
       border-radius: 7px;
@@ -202,6 +211,7 @@
       border-bottom: 1px solid #f1f5f9;
       font-size: 12px;
       cursor: pointer;
+      gap: 6px;
     }
     .item-row:last-child { border-bottom: none; }
     .item-row:hover { background: #f8fafc; }
@@ -209,6 +219,35 @@
       background: #eff6ff;
       font-weight: 700;
       color: var(--primary);
+    }
+    .item-row.hidden-item {
+      opacity: 0.5;
+      font-style: italic;
+    }
+    .item-row .irow-label {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      min-width: 0;
+    }
+    .item-row .irow-actions {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      flex-shrink: 0;
+    }
+    .icon-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--muted);
+      padding: 2px 5px;
+      font-size: 12px;
+      border-radius: 5px;
+      line-height: 1;
+    }
+    .icon-btn:hover {
+      background: #e2e8f0;
+      color: var(--text);
     }
     .color-dot {
       width: 11px;
@@ -734,6 +773,27 @@
             <label>Otočení / orientace</label>
             <button class="secondary" onclick="rotateSelected90()" style="height:32px;">↻ Otočit o 90° (R)</button>
           </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group" style="grid-column: 1 / -1;">
+            <label>Popis prvku (poznámka, materiál, rozměry u výrobce...)</label>
+            <textarea id="inpDesc" rows="2" oninput="updateSelectedFromInputs()" placeholder="Např. dub masiv, 180×200 cm, dodavatel XY..."></textarea>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group" style="grid-column: 1 / -1;">
+            <label>Odkaz na nákup (URL)</label>
+            <div style="display:flex; gap:6px;">
+              <input type="url" id="inpBuyUrl" oninput="updateSelectedFromInputs()" placeholder="https://www.obchod.cz/produkt" style="flex:1;">
+              <button type="button" class="secondary" onclick="openSelectedBuyUrl()" title="Otevřít odkaz v nové záložce">🔗 Otevřít</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="toolbar" style="margin-top:2px;">
+          <button class="secondary" id="btnToggleVisible" onclick="toggleSelectedVisibility()" style="flex:1;">👁️ Skrýt prvek v náhledech</button>
         </div>
 
         <div class="toolbar" style="margin-top:6px;">
@@ -1318,7 +1378,10 @@ function addRect(name, w, l, h, y = 0, color = '#3b82f6', type = 'box') {
     y,
     x: Math.round(Math.min(ROOM_W - w, Math.max(0, (ROOM_W - w) / 2 + offset))),
     z: type === 'window' || type === 'balcony' ? 0 : (type === 'door' ? ROOM_L - l : Math.round(Math.min(ROOM_L - l, Math.max(0, (ROOM_L - l) / 2 + offset)))),
-    color
+    color,
+    desc: '',
+    buyUrl: '',
+    hidden: false
   };
   items.push(newItem);
   selectedId = newItem.id;
@@ -1391,7 +1454,46 @@ function updateSelectedFromInputs() {
   sel.x = Math.max(0, Math.min(ROOM_W - sel.w, parseFloat(document.getElementById('inpX').value) || 0));
   sel.z = Math.max(0, Math.min(ROOM_L - sel.l, parseFloat(document.getElementById('inpZ').value) || 0));
   sel.color = document.getElementById('inpColor').value || '#3b82f6';
+  sel.desc = document.getElementById('inpDesc').value;
+  sel.buyUrl = document.getElementById('inpBuyUrl').value.trim();
   refreshAll(false);
+}
+
+function normalizeUrl(url) {
+  if (!url) return '';
+  if (!/^https?:\/\//i.test(url)) return 'https://' + url;
+  return url;
+}
+
+function openSelectedBuyUrl() {
+  const sel = getSelected();
+  if (!sel || !sel.buyUrl) {
+    alert('U tohoto prvku není vyplněný žádný odkaz na nákup.');
+    return;
+  }
+  window.open(normalizeUrl(sel.buyUrl), '_blank', 'noopener');
+}
+
+function toggleSelectedVisibility() {
+  const sel = getSelected();
+  if (!sel) return;
+  sel.hidden = !sel.hidden;
+  refreshAll(false);
+}
+
+function toggleItemVisibility(id, event) {
+  if (event) event.stopPropagation();
+  const it = items.find(i => i.id === id);
+  if (!it) return;
+  it.hidden = !it.hidden;
+  refreshAll(false);
+}
+
+function openItemBuyUrl(id, event) {
+  if (event) event.stopPropagation();
+  const it = items.find(i => i.id === id);
+  if (!it || !it.buyUrl) return;
+  window.open(normalizeUrl(it.buyUrl), '_blank', 'noopener');
 }
 
 function updateFromRightBottom(which) {
@@ -1428,9 +1530,14 @@ function syncSidebar(updateInputs = true) {
       document.getElementById('inpX').value = Math.round(sel.x * 10) / 10;
       document.getElementById('inpZ').value = Math.round(sel.z * 10) / 10;
       document.getElementById('inpColor').value = sel.color;
+      document.getElementById('inpDesc').value = sel.desc || '';
+      document.getElementById('inpBuyUrl').value = sel.buyUrl || '';
     }
     document.getElementById('inpRight').value = Math.round((ROOM_W - sel.x - sel.w) * 10) / 10;
     document.getElementById('inpBottom').value = Math.round((ROOM_L - sel.z - sel.l) * 10) / 10;
+
+    const btnVis = document.getElementById('btnToggleVisible');
+    if (btnVis) btnVis.textContent = sel.hidden ? '🙈 Zobrazit prvek v náhledech' : '👁️ Skrýt prvek v náhledech';
 
     const col = checkItemCollision(sel);
     const statusEl = document.getElementById('collisionStatus');
@@ -1449,15 +1556,19 @@ function syncSidebar(updateInputs = true) {
   items.forEach(item => {
     const col = checkItemCollision(item);
     const row = document.createElement('div');
-    row.className = 'item-row' + (item.id === selectedId ? ' active' : '');
+    row.className = 'item-row' + (item.id === selectedId ? ' active' : '') + (item.hidden ? ' hidden-item' : '');
     row.onclick = () => { selectedId = item.id; refreshAll(); };
     const badge = item.type === 'window' ? '🪟 ' : (item.type === 'door' || item.type === 'balcony' ? '🚪 ' : '');
     row.innerHTML = `
-      <span>
+      <span class="irow-label">
         <span class="color-dot" style="background:${item.color}"></span>
         ${badge}${item.name} ${col.collides ? '⚠️' : ''}
       </span>
-      <span style="color:var(--muted); font-size:11px;">${Math.round(item.w)}×${Math.round(item.l)} (v=${Math.round(item.h)})</span>
+      <span class="irow-actions">
+        <span style="color:var(--muted); font-size:11px; white-space:nowrap;">${Math.round(item.w)}×${Math.round(item.l)} (v=${Math.round(item.h)})</span>
+        ${item.buyUrl ? `<button type="button" class="icon-btn" title="Otevřít odkaz na nákup" onclick="openItemBuyUrl(${item.id}, event)">🔗</button>` : ''}
+        <button type="button" class="icon-btn" title="${item.hidden ? 'Zobrazit prvek' : 'Skrýt prvek'}" onclick="toggleItemVisibility(${item.id}, event)">${item.hidden ? '🙈' : '👁️'}</button>
+      </span>
     `;
     listEl.appendChild(row);
   });
@@ -1595,6 +1706,7 @@ function draw2D() {
 
   // Vykresleni vsech prvku (nabytek, dvere, okna)
   items.forEach(item => {
+    if (item.hidden) return;
     const p = roomToCanvas2D(item.x, item.z);
     const iw = item.w * SCALE_2D;
     const il = item.l * SCALE_2D;
@@ -1721,7 +1833,7 @@ c2d.addEventListener('mousedown', e => {
   const cy = (e.clientY - rect.top) * (c2d.height / rect.height);
 
   const sel = getSelected();
-  if (sel) {
+  if (sel && !sel.hidden) {
     const p = roomToCanvas2D(sel.x, sel.z);
     const hx = p.x + sel.w * SCALE_2D;
     const hy = p.y + sel.l * SCALE_2D;
@@ -1734,6 +1846,7 @@ c2d.addEventListener('mousedown', e => {
   const rm = canvasToRoom2D(cx, cy);
   for (let i = items.length - 1; i >= 0; i--) {
     const it = items[i];
+    if (it.hidden) continue;
     if (rm.x >= it.x && rm.x <= it.x + it.w && rm.z >= it.z && rm.z <= it.z + it.l) {
       selectedId = it.id;
       dragMode2D = 'move';
@@ -1963,6 +2076,7 @@ function drawSection() {
   const showItems = !showItemsEl || showItemsEl.checked;
   if (showItems) {
     items.forEach(item => {
+      if (item.hidden) return;
       const ix = ox + item.x * scale;
       const iw = item.w * scale;
       const ih = item.h * scale;
@@ -2067,7 +2181,7 @@ cSec.addEventListener('mousedown', e => {
   const showItemsEl = document.getElementById('showItemsInSecCheck');
   if (!showItemsEl || showItemsEl.checked) {
     const sel = getSelected();
-    if (sel) {
+    if (sel && !sel.hidden) {
       const ix = secOx + sel.x * secScale;
       const iw = sel.w * secScale;
       const iy = secFloorY - ((sel.y || 0) + sel.h) * secScale;
@@ -2079,6 +2193,7 @@ cSec.addEventListener('mousedown', e => {
 
     for (let i = items.length - 1; i >= 0; i--) {
       const it = items[i];
+      if (it.hidden) continue;
       const ix = secOx + it.x * secScale;
       const iw = it.w * secScale;
       const ih = it.h * secScale;
@@ -2300,6 +2415,7 @@ function draw3D() {
 
   const boxPolys = [];
   items.forEach(item => {
+    if (item.hidden) return;
     const x0 = item.x, x1 = item.x + item.w;
     const y0 = item.y || 0, y1 = y0 + item.h;
     const z0 = item.z, z1 = item.z + item.l;
@@ -2361,6 +2477,7 @@ function draw3D() {
   });
 
   items.forEach(item => {
+    if (item.hidden) return;
     const topCenter = project3D(toCentered3D(item.x + item.w / 2, (item.y || 0) + item.h + 8, item.z + item.l / 2));
     ctx3d.save();
     ctx3d.font = (item.id === selectedId ? 'bold 11.5px ' : '10.5px ') + 'Segoe UI, sans-serif';
