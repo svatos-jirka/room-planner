@@ -321,6 +321,113 @@
       font-size: 12px;
       font-weight: 600;
     }
+    .prj-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .prj-name-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #1d4ed8;
+      font-weight: 700;
+      font-size: 12.5px;
+      padding: 5px 10px;
+      border-radius: 7px;
+    }
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.55);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 20px;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-box {
+      background: #ffffff;
+      border-radius: 12px;
+      width: 100%;
+      max-width: 560px;
+      max-height: 86vh;
+      overflow-y: auto;
+      padding: 18px 20px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    .modal-box h3 {
+      margin: 0 0 12px 0;
+      font-size: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .modal-box h3 button.secondary {
+      padding: 4px 9px;
+    }
+    .new-project-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .new-project-row input {
+      flex: 1;
+      padding: 7px 9px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 13px;
+    }
+    .project-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 10px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      margin-bottom: 7px;
+    }
+    .project-row.active {
+      border-color: #93c5fd;
+      background: #eff6ff;
+    }
+    .project-row .pinfo {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+    .project-row .pinfo .pname {
+      font-weight: 700;
+      font-size: 13px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .project-row .pinfo .pmeta {
+      font-size: 10.5px;
+      color: var(--muted);
+    }
+    .project-row .pactions {
+      display: flex;
+      gap: 5px;
+      flex-shrink: 0;
+    }
+    .project-row .pactions button {
+      padding: 4px 8px;
+      font-size: 11px;
+    }
+    .empty-projects {
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+      padding: 18px 0;
+    }
   </style>
 </head>
 <body>
@@ -334,22 +441,46 @@
         Šikmina: <strong>245 cm</strong> (průmět <strong>204,45 cm</strong>) &nbsp;|&nbsp;
         Mezi oknem a balkonem: <strong>100 cm zeď</strong>
       </div>
+      <div class="prj-bar" style="margin-top:7px;">
+        <span class="prj-name-badge">📁 <span id="currentProjectName">Projekt</span></span>
+        <button class="secondary" onclick="openProjectsModal()">Projekty</button>
+      </div>
     </div>
     <div class="top-actions">
       <button class="secondary" onclick="resetDefaultRoom()">↺ Výchozí rozměry řezu</button>
       <button class="secondary" onclick="resetDefaultLayout()">↺ Obnovit výchozí dveře/okna</button>
       <button class="secondary" onclick="exportPNG()">Stáhnout půdorys (.PNG)</button>
       <button class="secondary" onclick="exportSectionPNG()">Stáhnout příčný řez (.PNG)</button>
-      <button class="secondary" onclick="saveJSON()">Uložit (.JSON)</button>
-      <button class="secondary" onclick="document.getElementById('fileInput').click()">Načíst (.JSON)</button>
+      <button class="secondary" onclick="saveJSON()">Exportovat projekt (.JSON)</button>
+      <button class="secondary" onclick="document.getElementById('fileInput').click()">Importovat projekt (.JSON)</button>
       <input type="file" id="fileInput" accept=".json" style="display:none" onchange="loadJSON(event)">
     </div>
   </header>
+
+  <!-- MODAL: SPRAVA PROJEKTU (vytvoreni, prepinani, prejmenovani, mazani, export/import) -->
+  <div class="modal-overlay" id="projectsModal">
+    <div class="modal-box">
+      <h3>
+        <span>Projekty (uloženo v tomto prohlížeči)</span>
+        <button class="secondary" onclick="closeProjectsModal()">✕ Zavřít</button>
+      </h3>
+      <div class="new-project-row">
+        <input type="text" id="newProjectNameInput" placeholder="Název nového projektu (např. Podkroví – varianta B)">
+        <button onclick="createProjectFromModal()">+ Nový projekt</button>
+      </div>
+      <div class="toolbar" style="margin-bottom:10px;">
+        <button class="secondary" onclick="document.getElementById('fileInputModal').click()">Importovat ze souboru (.JSON)</button>
+        <input type="file" id="fileInputModal" accept=".json" style="display:none" onchange="importProjectFile(event)">
+      </div>
+      <div id="projectsList"></div>
+    </div>
+  </div>
 
   <!-- RYCHLE PRIDANI OBDELNIKU A STAVEBNICH PRVKU -->
   <div class="card" style="margin-bottom: 12px; padding: 9px 13px;">
     <div class="toolbar" style="margin-bottom: 0;">
       <strong style="font-size:12.5px; margin-right:2px;">Přidat prvek:</strong>
+
       <button onclick="addRect('Vlastní obdélník', 120, 80, 85, 0, '#3b82f6', 'box')">+ Nový obdélník</button>
       <button class="preset" onclick="addRect('Manželská postel', 180, 200, 55, 0, '#6366f1', 'box')">+ Postel 180×200</button>
       <button class="preset" onclick="addRect('Jednolůžko', 90, 200, 50, 0, '#8b5cf6', 'box')">+ Postel 90×200</button>
@@ -843,51 +974,264 @@ function ceilingHeightAtX(x) {
 }
 
 // ============================================================================
-// STAV APLIKACE (SEZNAM PRVKU)
+// SPRAVA PROJEKTU (vytvareni, prepinani, ukladani v localStorage, export/import JSON)
 // ============================================================================
-const STORAGE_KEY = 'pokoj_roomsketcher_items_v2';
-let items = [];
-let selectedId = null;
-let nextId = 1;
+const PROJECTS_INDEX_KEY = 'pokoj_roomsketcher_projects_v1';
+const CURRENT_PROJECT_KEY = 'pokoj_roomsketcher_current_project_v1';
+const PROJECT_DATA_PREFIX = 'pokoj_roomsketcher_project_data_v1_';
+const LEGACY_ROOM_KEY = 'pokoj_roomsketcher_room_v2';
+const LEGACY_ITEMS_KEY = 'pokoj_roomsketcher_items_v2';
 
-function getDefaultItems() {
-  return [
-    { id: 1, name: 'Okno 100×100', type: 'window', x: 230.5, z: 0, w: 100, l: 14, h: 100, y: 100, color: '#38bdf8' },
-    { id: 2, name: 'Balkonové dveře 100×200', type: 'balcony', x: 430.5, z: 0, w: 100, l: 14, h: 200, y: 0, color: '#0284c7' },
-    { id: 3, name: 'Vstupní dveře 80×200', type: 'door', x: 340.5, z: 413, w: 80, l: 14, h: 200, y: 0, color: '#b45309' },
-    { id: 4, name: 'Manželská postel', type: 'box', x: 205, z: 120, w: 180, l: 200, h: 55, y: 0, color: '#6366f1' },
-    { id: 5, name: 'Komoda pod šikminu', type: 'box', x: 10, z: 140, w: 50, l: 140, h: 95, y: 0, color: '#0891b2' },
-    { id: 6, name: 'Psací stůl', type: 'box', x: 490, z: 170, w: 140, l: 70, h: 75, y: 0, color: '#d97706' }
-  ];
+let currentProjectId = null;
+let currentProjectName = 'Můj pokoj';
+
+function genProjectId() {
+  return 'p_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+}
+
+function loadProjectsIndex() {
+  try {
+    const raw = localStorage.getItem(PROJECTS_INDEX_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveProjectsIndex(list) {
+  try {
+    localStorage.setItem(PROJECTS_INDEX_KEY, JSON.stringify(list));
+  } catch (e) {}
+}
+
+function loadProjectData(id) {
+  try {
+    const raw = localStorage.getItem(PROJECT_DATA_PREFIX + id);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function saveProjectData(id, data) {
+  try {
+    localStorage.setItem(PROJECT_DATA_PREFIX + id, JSON.stringify(data));
+  } catch (e) {}
+}
+
+function touchProjectIndexEntry(id, nameOverride) {
+  const list = loadProjectsIndex();
+  const entry = list.find(p => p.id === id);
+  const now = new Date().toISOString();
+  if (entry) {
+    if (nameOverride !== undefined) entry.name = nameOverride;
+    entry.updatedAt = now;
+  } else {
+    list.push({ id, name: nameOverride || currentProjectName, createdAt: now, updatedAt: now });
+  }
+  saveProjectsIndex(list);
+}
+
+function createProject(name, roomData, itemsData, makeCurrent = true) {
+  const id = genProjectId();
+  const finalName = (name && name.trim()) || 'Nový projekt';
+  const data = {
+    room: roomData || getDefaultRoom(),
+    items: itemsData || getDefaultItems()
+  };
+  saveProjectData(id, data);
+  touchProjectIndexEntry(id, finalName);
+  if (makeCurrent) {
+    switchProject(id);
+  }
+  return id;
+}
+
+function switchProject(id) {
+  const data = loadProjectData(id);
+  const list = loadProjectsIndex();
+  const entry = list.find(p => p.id === id);
+  if (!data || !entry) return false;
+
+  currentProjectId = id;
+  currentProjectName = entry.name;
+  localStorage.setItem(CURRENT_PROJECT_KEY, id);
+
+  room = { ...getDefaultRoom(), ...(data.room || {}) };
+  recalcRoomDerived();
+
+  items = Array.isArray(data.items) && data.items.length ? data.items : getDefaultItems();
+  nextId = items.length ? Math.max(...items.map(i => i.id)) + 1 : 1;
+  selectedId = items.length ? items[0].id : null;
+
+  updateProjectNameBadge();
+  return true;
+}
+
+function renameCurrentProject(newName) {
+  if (!newName || !newName.trim() || !currentProjectId) return;
+  currentProjectName = newName.trim();
+  touchProjectIndexEntry(currentProjectId, currentProjectName);
+  updateProjectNameBadge();
+}
+
+function renameProject(id, newName) {
+  if (!newName || !newName.trim()) return;
+  touchProjectIndexEntry(id, newName.trim());
+  if (id === currentProjectId) {
+    currentProjectName = newName.trim();
+    updateProjectNameBadge();
+  }
+  renderProjectsList();
+}
+
+function duplicateProject(id) {
+  const data = loadProjectData(id);
+  const list = loadProjectsIndex();
+  const entry = list.find(p => p.id === id);
+  if (!data || !entry) return;
+  createProject(entry.name + ' (kopie)', data.room, data.items, false);
+  renderProjectsList();
+}
+
+function deleteProject(id) {
+  const list = loadProjectsIndex();
+  const remaining = list.filter(p => p.id !== id);
+  saveProjectsIndex(remaining);
+  try { localStorage.removeItem(PROJECT_DATA_PREFIX + id); } catch (e) {}
+
+  if (id === currentProjectId) {
+    if (remaining.length > 0) {
+      switchProject(remaining[0].id);
+    } else {
+      createProject('Můj pokoj', getDefaultRoom(), getDefaultItems());
+    }
+    refreshAll();
+  }
+  renderProjectsList();
+}
+
+function updateProjectNameBadge() {
+  const el = document.getElementById('currentProjectName');
+  if (el) el.textContent = currentProjectName;
+}
+
+function openProjectsModal() {
+  renderProjectsList();
+  document.getElementById('newProjectNameInput').value = '';
+  document.getElementById('projectsModal').classList.add('open');
+}
+
+function closeProjectsModal() {
+  document.getElementById('projectsModal').classList.remove('open');
+}
+
+function createProjectFromModal() {
+  const inp = document.getElementById('newProjectNameInput');
+  const name = inp.value.trim() || ('Nový projekt ' + (loadProjectsIndex().length + 1));
+  createProject(name, getDefaultRoom(), getDefaultItems());
+  refreshAll();
+  closeProjectsModal();
+}
+
+function openProjectFromModal(id) {
+  if (switchProject(id)) {
+    refreshAll();
+    closeProjectsModal();
+  }
+}
+
+function renameProjectFromModal(id, currentName) {
+  const newName = prompt('Nový název projektu:', currentName);
+  if (newName !== null) renameProject(id, newName);
+}
+
+function fmtDate(iso) {
+  if (!iso) return '';
+  try {
+    const d = new Date(iso);
+    return d.toLocaleDateString('cs-CZ') + ' ' + d.toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' });
+  } catch (e) {
+    return '';
+  }
+}
+
+function renderProjectsList() {
+  const listEl = document.getElementById('projectsList');
+  if (!listEl) return;
+  const list = loadProjectsIndex().sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''));
+
+  if (list.length === 0) {
+    listEl.innerHTML = '<div class="empty-projects">Zatím žádné uložené projekty. Vytvoř první výše.</div>';
+    return;
+  }
+
+  listEl.innerHTML = '';
+  list.forEach(p => {
+    const row = document.createElement('div');
+    row.className = 'project-row' + (p.id === currentProjectId ? ' active' : '');
+    row.innerHTML = `
+      <div class="pinfo">
+        <div class="pname">${p.id === currentProjectId ? '✓ ' : ''}${p.name}</div>
+        <div class="pmeta">Upraveno: ${fmtDate(p.updatedAt)}</div>
+      </div>
+      <div class="pactions">
+        <button onclick="openProjectFromModal('${p.id}')">Otevřít</button>
+        <button class="secondary" onclick="renameProjectFromModal('${p.id}', ${JSON.stringify(p.name)})">Přejmenovat</button>
+        <button class="secondary" onclick="duplicateProject('${p.id}')">Duplikovat</button>
+        <button class="secondary" onclick="exportProjectById('${p.id}')">Export</button>
+        <button class="danger" onclick="if(confirm('Opravdu smazat projekt \\'${p.name.replace(/'/g, "\\'")}\\'?')) deleteProject('${p.id}')">Smazat</button>
+      </div>
+    `;
+    listEl.appendChild(row);
+  });
+}
+
+function saveCurrentProjectData() {
+  if (!currentProjectId) return;
+  saveProjectData(currentProjectId, { room, items });
+  touchProjectIndexEntry(currentProjectId);
+}
+
+function migrateLegacyDataIfNeeded() {
+  const existingIndex = loadProjectsIndex();
+  if (existingIndex.length > 0) return false;
+
+  let legacyRoom = null;
+  let legacyItems = null;
+  try {
+    const r = localStorage.getItem(LEGACY_ROOM_KEY);
+    if (r) legacyRoom = JSON.parse(r);
+  } catch (e) {}
+  try {
+    const it = localStorage.getItem(LEGACY_ITEMS_KEY);
+    if (it) legacyItems = JSON.parse(it);
+  } catch (e) {}
+
+  if (legacyRoom || (Array.isArray(legacyItems) && legacyItems.length)) {
+    createProject('Můj pokoj', legacyRoom || getDefaultRoom(), legacyItems || getDefaultItems());
+    return true;
+  }
+  return false;
 }
 
 function loadInitialItems() {
-  const savedRoom = localStorage.getItem(ROOM_STORAGE_KEY);
-  if (savedRoom) {
-    try {
-      const parsedRoom = JSON.parse(savedRoom);
-      if (parsedRoom && typeof parsedRoom === 'object') {
-        room = { ...getDefaultRoom(), ...parsedRoom };
-      }
-    } catch (e) {}
-  }
-  recalcRoomDerived();
+  const migrated = migrateLegacyDataIfNeeded();
+  if (migrated) return;
 
-  const saved = localStorage.getItem(STORAGE_KEY);
-  if (saved) {
-    try {
-      const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        items = parsed;
-        nextId = Math.max(...items.map(i => i.id)) + 1;
-        selectedId = items[0].id;
-        return;
-      }
-    } catch (e) {}
+  const savedCurrentId = localStorage.getItem(CURRENT_PROJECT_KEY);
+  const list = loadProjectsIndex();
+
+  if (savedCurrentId && list.find(p => p.id === savedCurrentId)) {
+    if (switchProject(savedCurrentId)) return;
   }
-  items = getDefaultItems();
-  nextId = 7;
-  selectedId = 2;
+  if (list.length > 0) {
+    const sorted = [...list].sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''));
+    if (switchProject(sorted[0].id)) return;
+  }
+
+  createProject('Můj pokoj', getDefaultRoom(), getDefaultItems());
 }
 
 function resetDefaultLayout() {
@@ -914,10 +1258,7 @@ function swapWindowAndBalcony() {
 }
 
 function saveToLocalStorage() {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-    localStorage.setItem(ROOM_STORAGE_KEY, JSON.stringify(room));
-  } catch (e) {}
+  saveCurrentProjectData();
 }
 
 function getSelected() {
@@ -2029,16 +2370,55 @@ function exportSectionPNG() {
   link.click();
 }
 
-function saveJSON() {
+function sanitizeFileName(name) {
+  return (name || 'projekt')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9_\-]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .toLowerCase() || 'projekt';
+}
+
+function downloadProjectJSON(name, roomData, itemsData) {
   const payload = {
-    room,
-    items
+    projectName: name,
+    room: roomData,
+    items: itemsData
   };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const link = document.createElement('a');
-  link.download = 'pokoj_rozvrzeni.json';
+  link.download = `pokoj_projekt_${sanitizeFileName(name)}.json`;
   link.href = URL.createObjectURL(blob);
   link.click();
+}
+
+function saveJSON() {
+  downloadProjectJSON(currentProjectName, room, items);
+}
+
+function exportProjectById(id) {
+  const data = loadProjectData(id);
+  const list = loadProjectsIndex();
+  const entry = list.find(p => p.id === id);
+  if (!data || !entry) return;
+  downloadProjectJSON(entry.name, data.room || getDefaultRoom(), data.items || getDefaultItems());
+}
+
+function importProjectDataObject(data, fallbackName) {
+  let roomData = getDefaultRoom();
+  let itemsData = getDefaultItems();
+  let name = fallbackName;
+
+  if (Array.isArray(data)) {
+    // Starsi format: pouze pole prvku
+    itemsData = data;
+  } else if (data && typeof data === 'object') {
+    if (data.room && typeof data.room === 'object') roomData = { ...getDefaultRoom(), ...data.room };
+    if (Array.isArray(data.items)) itemsData = data.items;
+    if (data.projectName) name = data.projectName;
+  }
+
+  createProject(name, roomData, itemsData);
+  refreshAll();
 }
 
 function loadJSON(event) {
@@ -2048,37 +2428,38 @@ function loadJSON(event) {
   reader.onload = e => {
     try {
       const data = JSON.parse(e.target.result);
-      if (Array.isArray(data)) {
-        items = data;
-        nextId = items.length ? Math.max(...items.map(i => i.id)) + 1 : 1;
-        selectedId = items.length ? items[0].id : null;
-        refreshAll();
-      } else if (data && Array.isArray(data.items)) {
-        if (data.room && typeof data.room === 'object') {
-          room = { ...getDefaultRoom(), ...data.room };
-          recalcRoomDerived();
-        }
-        items = data.items;
-        nextId = items.length ? Math.max(...items.map(i => i.id)) + 1 : 1;
-        selectedId = items.length ? items[0].id : null;
-        refreshAll();
-      }
+      const fallbackName = file.name.replace(/\.json$/i, '').replace(/^pokoj_projekt_/i, '') || 'Importovaný projekt';
+      importProjectDataObject(data, fallbackName);
     } catch (err) {
       alert('Nepodařilo se načíst soubor JSON.');
     }
   };
   reader.readAsText(file);
+  event.target.value = '';
+}
+
+function importProjectFile(event) {
+  loadJSON(event);
+  closeProjectsModal();
 }
 
 function refreshAll(updateInputs = true, skipSectionField = null, skipElId = null) {
   recalcRoomDerived();
   saveToLocalStorage();
+  updateProjectNameBadge();
   syncSectionInputs(skipSectionField, skipElId);
   syncSidebar(updateInputs);
   draw2D();
   drawSection();
   draw3D();
 }
+
+document.getElementById('projectsModal').addEventListener('click', e => {
+  if (e.target.id === 'projectsModal') closeProjectsModal();
+});
+window.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeProjectsModal();
+});
 
 loadInitialItems();
 refreshAll();
